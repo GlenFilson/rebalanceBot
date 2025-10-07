@@ -6,5 +6,7 @@ docker ps [To view running containers]
 
 docker logs -f bot [View the containers output, access its terminal]
 
+{ctrl+c} [exit the logs]
+
 docker stop bot [stop the container]
 
