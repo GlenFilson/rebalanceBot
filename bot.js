@@ -53,11 +53,20 @@ function log(message) {
 }
 
 async function countdownNextCheck(seconds) {
+  const isTTY = process.stdout.isTTY === true;
   for (let remaining = seconds; remaining > 0; remaining--) {
-    process.stdout.write(`\rNext check in ${remaining}s   `);
+    const msg = `Next check in ${remaining}s   `;
+    if (isTTY) {
+      process.stdout.write(`\r${msg}`);
+    } else {
+      // In non-TTY (Docker logs), emit less frequently to avoid spam
+      if (remaining === seconds || remaining <= 3 || remaining % 5 === 0) {
+        console.log(msg);
+      }
+    }
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  process.stdout.write(`\r`);
+  if (isTTY) process.stdout.write(`\r`);
 }
 
 // function getWalletAddressFromKeypairPath(keypairPath) {
