@@ -52,6 +52,14 @@ function log(message) {
   console.log(`[${new Date().toISOString()}] ${message}`);
 }
 
+async function countdownNextCheck(seconds) {
+  for (let remaining = seconds; remaining > 0; remaining--) {
+    process.stdout.write(`\rNext check in ${remaining}s   `);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  process.stdout.write(`\r`);
+}
+
 // function getWalletAddressFromKeypairPath(keypairPath) {
 //   return path.basename(keypairPath, path.extname(keypairPath));
 // }
@@ -710,9 +718,7 @@ async function rebalancePortfolio() {
       }
 
       log(`\nWaiting ${CHECK_INTERVAL} seconds before next check...`);
-      await new Promise((resolve) =>
-        setTimeout(resolve, CHECK_INTERVAL * 1000)
-      );
+      await countdownNextCheck(CHECK_INTERVAL);
     }
   } catch (error) {
     log(`Failed to read keypair file: ${error.message}`);
