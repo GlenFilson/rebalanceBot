@@ -33,7 +33,6 @@ const TOKEN_IDS = {
 };
 
 const RPC_ENDPOINT = `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`;
-// const KEYPAIR_PATH = "rtrAfh7jLW92d5SqsibLQPRFS7DPEs5UraZR7B4Sd5i.json";
 const REBALANCE_THRESHOLD = new Decimal("0.0042");
 const CHECK_INTERVAL = 60;
 
