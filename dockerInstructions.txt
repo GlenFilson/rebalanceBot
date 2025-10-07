@@ -4,9 +4,11 @@ docker run -d --rm --name bot --env-file .env bot [run the image in detached mod
 
 docker ps [To view running containers]
 
-docker logs -f bot [View the containers output, access its terminal]
+docker logs -f bot [View the containers output logs live, access its terminal]
 
 {ctrl+c} [exit the logs]
+
+docker exec -it bot /bin/sh [get access to the containers shell]
 
 docker stop bot [stop the container]
 
