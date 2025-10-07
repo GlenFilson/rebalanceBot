@@ -38,9 +38,7 @@ const CHECK_INTERVAL = 60;
 
 const STASH_THRESHOLD = new Decimal("21"); // $10 threshold for stashing
 const STASH_AMOUNT = new Decimal("2"); // $1 to stash
-const STASH_ADDRESS = new web3.PublicKey(
-  "DYbLbP2DKWBc43j94aWeGscdzCX9GBomemU67k98QmPa" //own stash address
-);
+
 const USDC_MINT = new web3.PublicKey(
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 );
@@ -133,9 +131,6 @@ async function getWalletBalances(walletAddress) {
         // Sum up all accounts for this token (usually there's just one)
         const totalBalance = tokenResponse.data.result.value.reduce(
           (sum, account) => {
-            //log(`Processing account for ${asset}:`);
-            //log(`Account data: ${JSON.stringify(account.account.data.parsed?.info?.tokenAmount, null, 2)}`);
-
             if (account.account.data.parsed?.info?.tokenAmount) {
               const amount =
                 account.account.data.parsed.info.tokenAmount.amount;
@@ -499,136 +494,6 @@ async function sendBundle(transactions) {
   }
 }
 
-async function executeStashAndRebalance(
-  rebalanceAmounts,
-  prices,
-  fromAccount,
-  totalValue,
-  usdcValue,
-  delta
-) {
-  log("Executing stash and rebalance operation...");
-  let stashAmount = STASH_AMOUNT;
-  let doubleStashTriggered = false;
-
-  if (delta.gte(DOUBLE_STASH_THRESHOLD)) {
-    doubleStashTriggered = true;
-    stashAmount = STASH_AMOUNT.mul(2);
-    log("Double stash threshold reached.");
-  }
-
-  try {
-    // Print stash operation
-    log(`Stashing $${stashAmount} USDC to ${STASH_ADDRESS}`);
-
-    // Print trades before creating transactions
-    const trades = [];
-    for (const [asset, amount] of Object.entries(rebalanceAmounts)) {
-      if (asset !== "USDC" && amount.abs().gt(new Decimal("0.01"))) {
-        const tradeValue = amount.abs().mul(prices[asset]);
-        if (amount.gt(0)) {
-          trades.push({
-            from: "USDC",
-            to: asset,
-            amount: tradeValue,
-            fromAmount: tradeValue,
-            toAmount: amount,
-          });
-        } else {
-          trades.push({
-            from: asset,
-            to: "USDC",
-            amount: tradeValue,
-            fromAmount: amount.abs(),
-            toAmount: tradeValue,
-          });
-        }
-      }
-    }
-
-    if (trades.length > 0) {
-      printTrades(trades);
-    } else {
-      log("No trades needed for rebalancing after stash.");
-    }
-
-    // Create stash transaction
-    const stashTransaction = await createTipTransaction(
-      fromAccount,
-      stashAmount
-    );
-
-    // Create rebalance transactions
-    const swapTransactions = await createRebalanceTransactions(
-      rebalanceAmounts,
-      prices,
-      fromAccount
-    );
-
-    // Combine all transactions
-    const allTransactions = [...swapTransactions, stashTransaction];
-
-    // Send the bundle
-    const bundleId = await sendBundle(allTransactions);
-    log(`Bundle submitted with ID: ${bundleId}`);
-    log(`Stashed $${stashAmount} to ${STASH_ADDRESS}`);
-    log(
-      `Processed ${swapTransactions.length} swap(s) and 1 stash transaction.`
-    );
-
-    // Wait for 15 seconds before checking the result
-    log("Waiting for 15 seconds before verifying the transactions...");
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-
-    // Verify the transactions
-    const updatedBalances = await getWalletBalances(
-      fromAccount.publicKey.toString()
-    );
-    const updatedPrices = await getPrices();
-    const { totalValue: updatedTotalValue } = calculatePortfolioValue(
-      updatedBalances,
-      updatedPrices
-    );
-
-    log("\nUpdated portfolio after stash and rebalance:");
-    printPortfolio(updatedBalances, updatedPrices, updatedTotalValue);
-
-    // Check if the rebalance was successful
-    const newAllocations = Object.fromEntries(
-      Object.keys(ASSETS).map((asset) => [
-        asset,
-        updatedBalances[asset].mul(updatedPrices[asset]).div(updatedTotalValue),
-      ])
-    );
-
-    const rebalanceSuccessful = Object.entries(newAllocations).every(
-      ([asset, alloc]) =>
-        alloc.minus(ASSETS[asset].allocation).abs().lte(REBALANCE_THRESHOLD)
-    );
-
-    if (rebalanceSuccessful) {
-      log("Stash and rebalance operation was successful.");
-      // Update lastStashValue and initialPortfolioValue
-      lastStashValue = updatedTotalValue;
-      initialPortfolioValue = updatedTotalValue;
-      log(`Updated last stash value to: $${lastStashValue.toFixed(2)}`);
-      log(
-        `Reset initial portfolio value to: $${initialPortfolioValue.toFixed(2)}`
-      );
-
-      if (doubleStashTriggered) {
-        log("Double stash completed.");
-      }
-    } else {
-      log(
-        "Stash and rebalance operation may not have been fully successful. Please check the updated portfolio."
-      );
-    }
-  } catch (error) {
-    log(`Failed to execute stash and rebalance: ${error.message}`);
-  }
-}
-
 async function executeRebalance(
   rebalanceAmounts,
   prices,
@@ -757,16 +622,7 @@ async function createRebalanceTransactions(
 }
 
 async function rebalancePortfolio() {
-  // const walletAddress = getWalletAddressFromKeypairPath(KEYPAIR_PATH);
-  // log(`Wallet address: ${walletAddress}`);
-
   try {
-    // const keypairData = await fs.readFile(KEYPAIR_PATH, { encoding: "utf8" });
-    // const secretKey = Uint8Array.from(JSON.parse(keypairData));
-    // const fromAccount = web3.Keypair.fromSecretKey(process.env.PRIVATE_KEY);
-    // const walletAddress = fromAccount.publicKey.toBase58();
-    // console.log(`Wallet address: ${walletAddress}`);
-
     const secretArray = JSON.parse(process.env.PRIVATE_KEY);
     const fromAccount = web3.Keypair.fromSecretKey(
       Uint8Array.from(secretArray)
@@ -826,21 +682,7 @@ async function rebalancePortfolio() {
             alloc.minus(ASSETS[asset].allocation).abs().gt(REBALANCE_THRESHOLD)
         );
 
-        // Check for stashing first, independent of rebalancing needs
-        if (
-          lastStashValue &&
-          (delta.gte(STASH_THRESHOLD) || delta.lte(STASH_THRESHOLD.neg()))
-        ) {
-          log("Stashing threshold reached. Executing stash operation.");
-          await executeStashAndRebalance(
-            rebalanceAmounts,
-            prices,
-            fromAccount,
-            totalValue,
-            usdcValue,
-            delta
-          );
-        } else if (needRebalance) {
+        if (needRebalance) {
           log("\nRebalancing needed. Executing rebalance operation.");
           await executeRebalance(
             rebalanceAmounts,
