@@ -13,17 +13,17 @@ const ASSETS = {
   USDC: {
     mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     decimals: 6,
-    allocation: new Decimal("0.30"),
+    allocation: new Decimal("0.35"),
   },
   SOL: {
     mint: "So11111111111111111111111111111111111111112",
     decimals: 9,
-    allocation: new Decimal("0.30"),
+    allocation: new Decimal("0.35"),
   },
   JLP: {
     mint: "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4",
     decimals: 6,
-    allocation: new Decimal("0.40"),
+    allocation: new Decimal("0.30"),
   },
 };
 
