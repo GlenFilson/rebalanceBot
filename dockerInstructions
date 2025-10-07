@@ -1,0 +1,8 @@
+docker build -t bot . [create/build the image]
+
+docker run --rm --name bot --env-file .env bot [run the created image]
+
+docker ps [To view running containers]
+
+docker stop bot [stop the container]
+
