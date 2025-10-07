@@ -1,8 +1,10 @@
 docker build -t bot . [create/build the image]
 
-docker run --rm --name bot --env-file .env bot [run the created image and pass in the env variables]
+docker run -d --rm --name bot --env-file .env bot [run the image in detached mode with the env variables]
 
 docker ps [To view running containers]
+
+docker logs -f bot [View the containers output, access its terminal]
 
 docker stop bot [stop the container]
 
