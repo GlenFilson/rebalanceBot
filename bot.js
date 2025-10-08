@@ -38,7 +38,7 @@ const CHECK_INTERVAL = 60;
 
 const STASH_THRESHOLD = new Decimal("21"); // $10 threshold for stashing
 const STASH_AMOUNT = new Decimal("2"); // $1 to stash
-
+let failedRebalanceCounter = 0;
 const USDC_MINT = new web3.PublicKey(
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 );
@@ -600,11 +600,16 @@ async function executeRebalance(
     );
 
     if (rebalanceSuccessful) {
-      log("Rebalance operation was successful.");
+      log(
+        "Rebalance operation was successful. Resetting failed rebalance counter."
+      );
+      failedRebalanceCounter = 0;
     } else {
       log(
-        "Rebalance operation may not have been fully successful. Please check the updated portfolio."
+        "Rebalance operation may not have been fully successful. Please check the updated portfolio. Failed rebalance counter: " +
+          failedRebalanceCounter
       );
+      failedRebalanceCounter++;
     }
   } catch (error) {
     log(`Failed to execute rebalance: ${error.message}`);
